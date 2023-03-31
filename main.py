@@ -1,11 +1,58 @@
 import tkinter as tk
 from tkinter import *
-from tkinter import colorchooser
-from tkinter import ttk
+from tkinter import colorchooser, ttk, filedialog
+from PIL import Image, ImageTk, ImageFont, ImageDraw
 
+
+global original_image
+global image_canvas
+ADDITIONAL_MARGIN = 20
+watermark_text = []
+watermark_image = []
+IMGS = []
+original_image = 0
 FONT_SIZE_LIST = (8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32)
 FONT_COLOR = 'black'
 FONT_SIZE = 16
+
+
+def upload_image():
+    global original_image, image_canvas
+
+    image_file_path = filedialog.askopenfilename()
+    image_to_change = Image.open(image_file_path)
+    IMGS.append(ImageTk.PhotoImage(image_to_change))
+    print(IMGS)
+
+    if original_image != 0:
+        image_canvas.delete(original_image)
+    image_frame.update()
+    photo_width = IMGS[-1].width()
+    photo_height = IMGS[-1].height()
+    frame_width = photo_width + ADDITIONAL_MARGIN
+    frame_height = photo_height + ADDITIONAL_MARGIN
+
+    image_canvas = tk.Canvas(image_frame, width=frame_width, height=frame_height, bg='green')
+    image_canvas.image = IMGS[-1]
+    image_canvas.grid(row=0, column=0)
+    original_image = image_canvas.create_image((int(frame_width/2), int(frame_height/2)), anchor='center', image=IMGS[-1])
+
+
+def delete_image():
+    global original_image
+    global image_canvas
+    try:
+        image_canvas.delete(original_image)
+    except NameError:
+        print('DOPISAC OKIENKO WPIERW WRZUC OBRAZ')
+
+
+def save_image():
+    pass
+
+
+def xxx():
+    pass
 
 
 def enable_text():
@@ -51,23 +98,59 @@ def get_text_watermark():
 
 def update_watermark_text():
     global FONT_COLOR, FONT_SIZE
+    global image_canvas, watermark_text
+
     # Check current size of image frame
-    image_frame.update()
     w = image_frame.winfo_width()
     h = image_frame.winfo_height()
 
-    image_canvas1 = tk.Canvas(image_frame, height=h, width=w)
-    image_canvas1.grid(row=0, column=0, sticky='nw')
-
-    # todolist: add density of the watermark for width and height
     distance = watermark_distance.get()
+    if watermark_text:
+        for id in watermark_text:
+            image_canvas.delete(id)
+    watermark_text = []
     for watermark_column_stamp in range(0, w-distance, distance):
         for watermark_row_stamp in range(0, h-distance, distance):
-            image_canvas1.create_text(watermark_column_stamp, watermark_row_stamp, text=text_watermark.get(), angle=rotation.get(), anchor="nw", fill=FONT_COLOR,
-                                  font=('Arial', FONT_SIZE))
+            # Saving ids of every watermark in case of delete
+            watermark_text.append(image_canvas.create_text(watermark_column_stamp, watermark_row_stamp, text=text_watermark.get(), angle=rotation.get(), anchor="nw", fill=FONT_COLOR,
+                                  font=('Arial', FONT_SIZE)))
+    # global FONT_COLOR, FONT_SIZE
+    # # Check current size of image frame
+    # image_frame.update()
+    # w = image_frame.winfo_width()
+    # h = image_frame.winfo_height()
+    # window.wm_attributes('-transparentcolor', 'yellow')
+    #
+    # distance = watermark_distance.get()
+    # for watermark_column_stamp in range(0, w - distance, distance):
+    #     for watermark_row_stamp in range(0, h - distance, distance):
+    #         image_canvas1 = tk.Label(image_frame, text=text_watermark.get(), bg='yellow')
+    #         image_canvas1.config(font=('Arial', FONT_SIZE))
+    #
+    #         image_canvas1.place(x=watermark_column_stamp, y=watermark_row_stamp)
 
-    # image_canvas1.create_text(100, 100, text='xxx', angle=rotation.get(), anchor="w", fill=FONT_COLOR, font=('Arial', FONT_SIZE))
-    # image_canvas1.create_text(600, 600, text='xxxx', angle=rotation.get(), anchor="w", fill=FONT_COLOR, font=('Arial', FONT_SIZE))
+
+def upload_watermark_image():
+    global FONT_COLOR, FONT_SIZE
+    global image_canvas, watermark_image
+
+    image_file_path = filedialog.askopenfilename()
+    image_to_change = Image.open(image_file_path)
+    IMGS.append(ImageTk.PhotoImage(image_to_change))
+
+    # Check current size of image frame
+    w = image_frame.winfo_width()
+    h = image_frame.winfo_height()
+
+    distance = image_watermark_distance.get()
+    if watermark_image:
+        for id in watermark_image:
+            image_canvas.delete(id)
+
+    watermark_image = []
+    for watermark_column_stamp in range(0, w - distance, distance):
+        for watermark_row_stamp in range(0, h - distance, distance):
+            watermark_image.append(image_canvas.create_image(watermark_column_stamp, watermark_row_stamp, anchor='nw', image=IMGS[-1]))
 
 
 # Creating a window
@@ -100,13 +183,15 @@ window.grid_rowconfigure(1, weight=98)
 window.grid_rowconfigure(2, weight=1)
 window.grid_columnconfigure(0, weight=1)
 window.grid_columnconfigure(1, weight=1)
-window.grid_columnconfigure(2, weight=8)
+window.grid_columnconfigure(2, weight=15)
 
 # Placing the frames
 main_title.grid(row=0, column=0, padx=20, pady=5, sticky=tk.N+tk.S, columnspan=3)
 management_frame.grid(row=1, column=0, padx=5, pady=2, sticky='news')
 editor_frame.grid(row=1, column=1, padx=5, pady=2, sticky='news')
 image_frame.grid(row=1, column=2, padx=5, pady=2, sticky='news')
+
+
 
 # Placing the editor frames
 options_editor_frame.grid(row=0, column=0, padx=5, pady=10, sticky='news')
@@ -150,16 +235,28 @@ text_editor_frame.grid_columnconfigure(1, weight=6)
 # text_editor_font_frame.grid_columnconfigure(0, weight=1)
 # text_editor_font_frame.grid_columnconfigure(1, weight=1)
 
+image_editor_frame.grid_rowconfigure(0, weight=10)
+image_editor_frame.grid_rowconfigure(1, weight=1)
+image_editor_frame.grid_rowconfigure(2, weight=1)
+image_editor_frame.grid_rowconfigure(3, weight=1)
+image_editor_frame.grid_rowconfigure(4, weight=1)
+image_editor_frame.grid_rowconfigure(5, weight=1)
+image_editor_frame.grid_rowconfigure(6, weight=100)
+image_editor_frame.grid_columnconfigure(0, weight=1)
+
 
 # editor_frame.grid_rowconfigure(3, weight=28) #additional row to make the rest of space take 3/9
 
 image_frame.grid_columnconfigure(0, weight=1)
+
+
 image_frame.grid_rowconfigure(0, weight=1)
+
 ### Setting the management elements ###
 # Creating management buttons
-management_button_1 = tk.Button(management_frame, text='Upload an image')
-management_button_2 = tk.Button(management_frame, text='Delete image')
-management_button_3 = tk.Button(management_frame, text='Save image')
+management_button_1 = tk.Button(management_frame, text='Upload an image', command=upload_image)
+management_button_2 = tk.Button(management_frame, text='Delete image', command=delete_image)
+management_button_3 = tk.Button(management_frame, text='Save image', command=save_image)
 
 # Placing the management buttons
 management_button_1.grid(row=0, column=0, padx=5, pady=5, sticky='news')
@@ -193,11 +290,9 @@ text_editor_color_picker = tk.Button(text_editor_frame, text='Pick a text color'
 text_editor_color_preview = tk.Button(text_editor_frame, text='            ', state='disabled', relief='groove')
 text_editor_rotation_label = tk.Label(text_editor_frame, text="Rotate the text:", state='disabled')
 text_editor_rotation_scale = tk.Scale(text_editor_frame, variable=rotation, from_=-90, to=90, orient='horizontal', state='disabled')
+text_editor_watermark_distance_label = tk.Label(text_editor_frame, text="Density of the watermark [px]:", state='disabled')
 text_editor_watermark_distance = tk.Scale(text_editor_frame, variable=watermark_distance, from_=50, to=200, orient='horizontal', state='disabled')
-text_editor_rotation_scale_button = tk.Button(text_editor_frame, text='Show watermark', state='disabled', command=update_watermark_text)
-
-
-
+text_editor_show_button = tk.Button(text_editor_frame, text='Show watermark', state='disabled', command=update_watermark_text)
 
 text_editor_label.grid(row=0, column=0, columnspan=2, padx=5, pady=5, sticky='nw')
 text_editor_entry.grid(row=1, column=0, columnspan=2, padx=5, pady=5, sticky='new')
@@ -208,25 +303,22 @@ text_editor_color_picker.grid(row=3, column=0, padx=5, pady=10, sticky='nw')
 text_editor_color_preview.grid(row=3, column=1, padx=7, pady=10, sticky='nw')
 text_editor_rotation_label.grid(row=4, column=0, padx=2, pady=(10,5), sticky='nw')
 text_editor_rotation_scale.grid(row=5, column=0,columnspan=2, padx=2, pady=5, sticky='new')
-text_editor_watermark_distance.grid(row=6, column=0,columnspan=2, padx=2, pady=5, sticky='new')
-text_editor_rotation_scale_button.grid(row=7, column=0, columnspan=2, padx=2, pady=10, sticky='new')
-
-
-
-
+text_editor_watermark_distance_label.grid(row=6, column=0, padx=2, pady=(10,5), sticky='nw')
+text_editor_watermark_distance.grid(row=7, column=0,columnspan=2, padx=2, pady=5, sticky='new')
+text_editor_show_button.grid(row=8, column=0, columnspan=2, padx=5, pady=10, sticky='news')
 
 # Creating image editor elements
-image_var = tk.StringVar()
-image_editor_button = tk.Button(image_editor_frame, text="Editor_Button_Example", relief='groove', state='disabled')
-image_editor_entry = tk.Entry(image_editor_frame, textvariable=image_var, state='disabled')
+image_watermark_distance = tk.IntVar(value=100)
+image_editor_upload_watermark_button = tk.Button(image_editor_frame, text="Upload image watermark", state='disabled', command=upload_watermark_image)
+image_editor_watermark_distance_label = tk.Label(image_editor_frame, text="Density of the watermark [px]:", state='disabled')
+image_editor_watermark_distance = tk.Scale(image_editor_frame, variable=image_watermark_distance, from_=50, to=200, orient='horizontal', state='disabled')
+image_editor_show_button = tk.Button(image_editor_frame, text='Show watermark', state='disabled', command=xxx)
 
-
-
-
-
-
-image_editor_button.grid(row=0, column=0)
-image_editor_entry.grid(row=1, column=0)
+image_editor_upload_watermark_button.grid(row=0, column=0, columnspan=2, padx=5, pady=5, sticky='news')
+image_editor_watermark_distance_label.grid(row=1, column=0, padx=2, pady=(10,5), sticky='nw')
+image_editor_watermark_distance.grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky='new')
+image_editor_show_button.grid(row=3, column=0, columnspan=2, padx=7, pady=5, sticky='news')
+# image_editor_entry.grid(row=1, column=0, sticky='news')
 
 # management_frame.pack(side="left", padx=10, pady=10, fill=tk.BOTH)
 # editor_frame.pack(side="left", padx=10, pady=10, fill=tk.BOTH)
