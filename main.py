@@ -1,7 +1,7 @@
 import tkinter as tk
-from tkinter import *
 from tkinter import colorchooser, ttk, filedialog, messagebox
-from PIL import Image, ImageTk, ImageFont, ImageDraw
+from PIL import Image, ImageTk, ImageGrab
+import time
 
 global original_image
 global image_canvas
@@ -14,6 +14,7 @@ original_image = 0
 FONT_SIZE_LIST = (8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32)
 FONT_COLOR = 'black'
 FONT_SIZE = 16
+
 
 # --- IMAGE HANDLING ---
 def upload_image():
@@ -55,7 +56,19 @@ def delete_image():
 
 
 def save_image():
-    pass
+    moment = time.strftime("%y-%m-%d_%H-%M-%S", time.localtime())
+    try:
+        image_canvas.update()
+        x = image_canvas.winfo_rootx()
+        y = image_canvas.winfo_rooty()
+        x1 = x + image_canvas.winfo_width()
+        y1 = y + image_canvas.winfo_height()
+        file = filedialog.asksaveasfile(initialfile='filename', defaultextension='.jpg',
+                                        filetypes=[('All files', '*.*'), ("Image files", "*.jpg")])
+        if file:
+            ImageGrab.grab().crop((x, y, x1, y1)).save(file)
+    except:
+        show_image_first()
 
 
 # --- MESSAGEBOXES ---
@@ -339,6 +352,5 @@ image_editor_upload_watermark_button.grid(row=0, column=0, columnspan=2, padx=5,
 image_editor_watermark_distance_label.grid(row=1, column=0, padx=2, pady=(10,5), sticky='nw')
 image_editor_watermark_distance.grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky='new')
 image_editor_show_button.grid(row=3, column=0, columnspan=2, padx=7, pady=5, sticky='news')
-
 
 window.mainloop()
